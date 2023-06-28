@@ -1,0 +1,107 @@
+#!/bin/bash
+
+# Set default values
+ZONE_NAME=""
+PROJECT_ID=""
+DNS_NAME=""
+SHARD=""
+
+# Function to display usage instructions
+display_help() {
+  echo "Usage: ./GCPShardJuggler [OPTIONS]"
+  echo "Options:"
+  echo "  --dns-zone      Specify the DNS zone name"
+  echo "  --project-id    Specify the project ID"
+  echo "  --dns-name      Specify the DNS name"
+  echo "  --shard         Specify the desired shard"
+  echo "  -h, --help      Display this help message"
+  echo ""
+  exit 0
+}
+
+# Parse command line arguments
+
+if [[ $# -eq 0 ]]; then
+  printf "\nMissing required flags\n\n"
+  display_help
+fi
+
+
+while [[ $# -gt 0 ]]; do
+  key="$1"
+
+  case $key in
+    --dns-zone)
+      ZONE_NAME="$2"
+      shift
+      shift
+      ;;
+    --project-id)
+      PROJECT_ID="$2"
+      shift
+      shift
+      ;;
+    --dns-name)
+      DNS_NAME="$2"
+      shift
+      shift
+      ;;
+    --shard)
+      SHARD="$2"
+      shift
+      shift
+      ;;
+    -h|--help)
+      display_help
+      ;;
+    *)  # Unknown option
+      echo "Unknown option: $1"
+      exit 1
+      ;;
+  esac
+done
+
+
+# Check if any required flag is missing
+if [[ -z "$ZONE_NAME" || -z "$PROJECT_ID" || -z "$DNS_NAME" || -z "$SHARD" ]]; then
+  printf "\nMissing required flag(s)!\n\n"
+  display_help
+fi
+
+COUNT=0
+
+while true; do
+  ((COUNT++))
+  printf "Number of Tries: $COUNT\n"
+
+  # Create the managed zone
+  ./gcloud dns managed-zones create "$ZONE_NAME" \
+    --description="" \
+    --dns-name="$DNS_NAME" \
+    --project="$PROJECT_ID" \
+    --visibility="public" \
+    --dnssec-state="on" \
+    --quiet \
+    --verbosity=none > /dev/null 2>&1
+
+  # Get the assigned shards
+  response=$(./gcloud dns managed-zones describe "$ZONE_NAME" \
+    --format=json \
+    --quiet \
+    --verbosity=none \
+    --project="$PROJECT_ID")
+  assigned_shards=$(echo "$response" | jq -r '.nameServers[0]')
+
+  printf "Assigned shards: $assigned_shards\n"
+
+  # Check if the assigned shards match the provided shard
+  if [[ $assigned_shards == *"$SHARD"* ]]; then
+    echo "Finally, $SHARD shards!"
+    exit 0
+  else
+    printf "Deleting the zone as $SHARD shards are not assigned.\n\n"
+    ./gcloud dns managed-zones delete "$ZONE_NAME" --verbosity=none --quiet --project="$PROJECT_ID" > /dev/null 2>&1
+  fi
+done
+
+
