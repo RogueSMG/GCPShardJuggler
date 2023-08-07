@@ -1,5 +1,5 @@
-# GCPShardJuggler [Possibly fixed now]
-A tool to aid in DNS Takeovers for Google Cloud [Possibly fixed]
+# GCPShardJuggler
+A tool to aid in DNS Takeovers for Google Cloud
 
 
 # Prerequisites
@@ -13,6 +13,13 @@ git clone https://github.com/RogueSMG/GCPShardJuggler.git
 cd GCPShardJuggler
 chmod +x GCPShardJuggler
 ```
+
+# Current Status
+*(Confirmed vulnerable as of July 2023)*
+
+[https://github.com/indianajson/can-i-take-over-dns/issues/2](https://github.com/indianajson/can-i-take-over-dns/issues/2)
+
+
 
 # Usage
 ![gcpshard-usage](https://github.com/RogueSMG/GCPShardJuggler/assets/41023447/d56ef728-7c6e-4781-a4cf-4e4ad53c4a7d)
