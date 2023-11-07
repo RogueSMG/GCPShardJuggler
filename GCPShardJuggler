@@ -85,7 +85,7 @@ while true; do
     --verbosity=none > /dev/null 2>&1
 
   # Get the assigned shards
-  response=$(./gcloud dns managed-zones describe "$ZONE_NAME" \
+  response=$(gcloud dns managed-zones describe "$ZONE_NAME" \
     --format=json \
     --quiet \
     --verbosity=none \
@@ -100,7 +100,7 @@ while true; do
     exit 0
   else
     printf "Deleting the zone as $SHARD shards are not assigned.\n\n"
-    ./gcloud dns managed-zones delete "$ZONE_NAME" --verbosity=none --quiet --project="$PROJECT_ID" > /dev/null 2>&1
+    gcloud dns managed-zones delete "$ZONE_NAME" --verbosity=none --quiet --project="$PROJECT_ID" > /dev/null 2>&1
   fi
 done
 
