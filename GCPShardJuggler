@@ -5,6 +5,7 @@ ZONE_NAME=""
 PROJECT_ID=""
 DNS_NAME=""
 SHARD=""
+LIMIT=999999
 
 # Function to display usage instructions
 display_help() {
@@ -14,6 +15,7 @@ display_help() {
   echo "  --project-id    Specify the project ID"
   echo "  --dns-name      Specify the DNS name"
   echo "  --shard         Specify the desired shard"
+  echo "  --limit         Specify a limit for the number of attempts"
   echo "  -h, --help      Display this help message"
   echo ""
   exit 0
@@ -46,6 +48,11 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
+    --limit)
+      LIMIT="$2"
+      shift
+      shift
+      ;;
     --shard)
       SHARD="$2"
       shift
@@ -72,20 +79,28 @@ COUNT=0
 
 while true; do
   ((COUNT++))
+  if (( $COUNT > $LIMIT )); then
+    echo "ERROR: number of attempts exceeded, quiting..."
+    exit 1
+  fi
+
   printf "Number of Tries: $COUNT\n"
 
   # Create the managed zone
-  ./gcloud dns managed-zones create "$ZONE_NAME" \
+  response=$(gcloud dns managed-zones create "$ZONE_NAME" \
     --description="" \
     --dns-name="$DNS_NAME" \
     --project="$PROJECT_ID" \
     --visibility="public" \
     --dnssec-state="on" \
-    --quiet \
-    --verbosity=none > /dev/null 2>&1
+    --quiet 2>&1)
+
+  echo $response | grep "Please verify ownership of the" > /dev/null && \
+    echo "ERROR: requires validation, quiting..." && \
+    exit 2
 
   # Get the assigned shards
-  response=$(./gcloud dns managed-zones describe "$ZONE_NAME" \
+  response=$(gcloud dns managed-zones describe "$ZONE_NAME" \
     --format=json \
     --quiet \
     --verbosity=none \
@@ -100,7 +115,7 @@ while true; do
     exit 0
   else
     printf "Deleting the zone as $SHARD shards are not assigned.\n\n"
-    ./gcloud dns managed-zones delete "$ZONE_NAME" --verbosity=none --quiet --project="$PROJECT_ID" > /dev/null 2>&1
+    gcloud dns managed-zones delete "$ZONE_NAME" --verbosity=none --quiet --project="$PROJECT_ID" > /dev/null 2>&1
   fi
 done
 
